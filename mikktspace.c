@@ -106,7 +106,7 @@ MIKK_INLINE SVec3		Normalize( const SVec3 v )
 }
 #endif
 
-MIKK_INLINE SVec3		NormalizeSafe( const SVec3 v )
+MIKK_INLINE SVec3		PreciseNormalizeSafe( const SVec3 v )
 {
 	const float len = Length(v);
 	if (len != 0.0f) {
@@ -116,6 +116,39 @@ MIKK_INLINE SVec3		NormalizeSafe( const SVec3 v )
 	{
 		return v;
 	}
+}
+
+MIKK_INLINE float RSqrtQuake(float x)
+{
+	float y = x;
+	float x2 = y * 0.5f;
+	long i = *(long *)&y;
+	i = 0x5f3759df - (i >> 1);
+	y = *(float *)&i;
+	y = y * (1.5f - (x2 * y * y)); // 1st iteration
+	// y = y * (1.5f - (x2 * y * y)); // 2nd iteration
+	return y;
+}
+
+MIKK_INLINE SVec3		FastNormalizeSafe( const SVec3 v )
+{
+	const float lenSqr = LengthSquared(v);
+	if (lenSqr != 0.0f) {
+		return vscale(RSqrtQuake(lenSqr), v);
+	}
+	else
+	{
+		return v;
+	}
+}
+
+MIKK_INLINE SVec3		NormalizeSafe( const SVec3 v )
+{
+	#if MIKK_FAST_NORMALIZE
+	return FastNormalizeSafe(v);
+	#else
+	return PreciseNormalizeSafe(v);
+	#endif
 }
 
 MIKK_INLINE float		vdot( const SVec3 v1, const SVec3 v2)
@@ -222,8 +255,8 @@ static STSpace AvgTSpace(const STSpace * pTS0, const STSpace * pTS1)
 		ts_res.fMagT = 0.5f*(pTS0->fMagT+pTS1->fMagT);
 		ts_res.vOs = vadd(pTS0->vOs,pTS1->vOs);
 		ts_res.vOt = vadd(pTS0->vOt,pTS1->vOt);
-		ts_res.vOs = NormalizeSafe(ts_res.vOs);
-		ts_res.vOt = NormalizeSafe(ts_res.vOt);
+		ts_res.vOs = PreciseNormalizeSafe(ts_res.vOs);
+		ts_res.vOt = PreciseNormalizeSafe(ts_res.vOt);
 	}
 
 	return ts_res;
@@ -1442,8 +1475,8 @@ static STSpace EvalTspace(int face_indices[], const int iFaces, const int piTriL
 	}
 
 	// normalize
-	res.vOs = NormalizeSafe(res.vOs);
-	res.vOt = NormalizeSafe(res.vOt);
+	res.vOs = PreciseNormalizeSafe(res.vOs);
+	res.vOt = PreciseNormalizeSafe(res.vOt);
 	if (fAngleSum>0)
 	{
 		res.fMagS /= fAngleSum;

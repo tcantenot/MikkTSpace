@@ -58,6 +58,9 @@ extern "C" {
  * and also quad triangulator plugin.
  */
 
+#ifndef MIKK_FAST_NORMALIZE
+#define MIKK_FAST_NORMALIZE 1
+#endif
 
 typedef int tbool;
 typedef struct SMikkTSpaceContext SMikkTSpaceContext;
